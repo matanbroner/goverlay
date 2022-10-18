@@ -66,7 +66,7 @@ func TestUnpack(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	correctId, err := id.NewPublicKeyId(privateKey.Public().(*rsa.PublicKey), "")
+	correctId, err := id.NewPublicKeyId(privateKey, "")
 	unpacked, err := Unpack(correctId, packed)
 	assert.Nil(t, err)
 	assert.Equal(t, unpacked.Data, message)

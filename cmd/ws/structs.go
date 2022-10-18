@@ -6,5 +6,5 @@ type WebSocketConfig struct {
 
 type WebSocketMessage struct {
 	Type    string `json:"type"`
-	Payload string `json:"payload"`
+	Payload []byte `json:"payload"`
 }

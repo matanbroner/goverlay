@@ -14,7 +14,7 @@ import (
 const bitSize = 4096
 
 type PublicKeyId struct {
-	PublicKey  *rsa.PublicKey
+	PrivateKey *rsa.PrivateKey
 	ID         string
 	PublicName string
 	InstanceID *InstanceID
@@ -28,21 +28,21 @@ type InstanceID struct {
 
 // PublicKeyID Methods
 
-func NewPublicKeyId(key *rsa.PublicKey, publicName string) (*PublicKeyId, error) {
+func NewPublicKeyId(key *rsa.PrivateKey, publicName string) (*PublicKeyId, error) {
 	if key == nil {
 		privateKey, err := rsa.GenerateKey(rand.Reader, bitSize)
 		if err != nil {
 			return nil, err
 		}
-		key = privateKey.Public().(*rsa.PublicKey)
+		key = privateKey
 	}
 	if publicName == "" {
 		publicName = "_anonymous"
 	}
 	id := &PublicKeyId{
-		PublicKey: key,
+		PrivateKey: key,
 	}
-	publicKeyBytes, err := json.Marshal(key)
+	publicKeyBytes, err := json.Marshal(key.Public())
 	if err != nil {
 		return nil, err
 	}

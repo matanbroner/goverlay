@@ -6,6 +6,7 @@ type PackableData struct {
 }
 
 type SignedData struct {
-	Signed    []byte
-	Signature []byte
+	Signed    []byte `json:"signed"`
+	Signature []byte `json:"signature"`
+	VerifyID  string `json:"verifyID"`
 }

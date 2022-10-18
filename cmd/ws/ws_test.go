@@ -6,11 +6,21 @@ import (
 	"github.com/matanbroner/goverlay/cmd/overlay"
 	"log"
 	"net/http"
+	"os"
 	"testing"
 )
 
-func init() {
+func TestMain(m *testing.M) {
+	// Write code here to run before tests
 	go startWsServer()
+
+	// Run tests
+	exitVal := m.Run()
+
+	// Write code here to run after tests
+
+	// Exit with exit value from tests
+	os.Exit(exitVal)
 }
 
 func startWsServer() {
@@ -25,9 +35,7 @@ func startWsServer() {
 		if err != nil {
 			log.Println(err)
 		}
-		if err != nil {
-			log.Println(err)
-		}
+		log.Println("wss client connected")
 	})
 	log.Fatal(http.ListenAndServe(":9999", nil))
 }
@@ -40,10 +48,7 @@ func TestConnect(t *testing.T) {
 	o := &overlay.Overlay{
 		ID: pkeyID,
 	}
-	ws := WebSocketWrapper{
-		Overlay: o,
-		Host:    "ws://localhost:9999/ws",
-	}
+	ws := NewWebSocketWrapper(o, "ws://localhost:9999/ws")
 	if err := ws.Connect(nil); err != nil {
 		t.Fatal(err)
 	}

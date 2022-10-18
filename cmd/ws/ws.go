@@ -2,10 +2,12 @@ package ws
 
 import (
 	"encoding/json"
+	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/gorilla/websocket"
 	"github.com/matanbroner/goverlay/cmd/id"
 	"github.com/matanbroner/goverlay/cmd/overlay"
+	"github.com/matanbroner/goverlay/cmd/signer"
 	"log"
 	"os"
 	"os/signal"
@@ -39,6 +41,7 @@ func NewWebSocketWrapper(o *overlay.Overlay, host string) *WebSocketWrapper {
 	successConnectionSet := mapset.NewSet[string]()
 	return &WebSocketWrapper{
 		ID:                           o.ID,
+		Host:                         host,
 		Overlay:                      o,
 		ConnectionMap:                &connectionMap,
 		RetrySeconds:                 1,
@@ -59,15 +62,7 @@ func (ws *WebSocketWrapper) Connect(config *WebSocketConfig) error {
 		return err
 	}
 	ws.Socket = sock
-	return nil
-}
 
-func (ws *WebSocketWrapper) Disconnect() error {
-	if ws.Socket != nil {
-		if err := ws.Socket.Close(); err != nil {
-			return err
-		}
-	}
 	ws.DoneChannel = make(chan struct{})
 	ws.MessageOutChannel = make(chan WebSocketMessage)
 	ws.InterruptChannel = make(chan os.Signal, 1)
@@ -89,6 +84,50 @@ func (ws *WebSocketWrapper) Disconnect() error {
 	}()
 
 	go ws.handleChannels()
+
+	action := "connect"
+	if config.Reconnect {
+		action = "reconnect"
+	}
+
+	payload := json.RawMessage(fmt.Sprintf(`
+		"action": "%s",
+		"from": "%s",
+		"fromInstance": "%s"
+	`, action, ws.ID.ID, ws.ID.InstanceID))
+	payloadBytes, err := payload.MarshalJSON()
+	if err != nil {
+		return err
+	}
+	signed, err := signer.Pack(string(payloadBytes), ws.ID.PrivateKey)
+	if err != nil {
+		return err
+	}
+	signed.VerifyID = ws.ID.ID
+	signedBytes, err := json.Marshal(signed)
+	if err != nil {
+		return err
+	}
+	message := WebSocketMessage{
+		Type:    "INIT",
+		Payload: signedBytes,
+	}
+
+	ws.MessageOutChannel <- message
+
+	//if (this.blockCallback) {
+	//	this.sendGetBlock();
+	//}
+
+	return nil
+}
+
+func (ws *WebSocketWrapper) Disconnect() error {
+	if ws.Socket != nil {
+		if err := ws.Socket.Close(); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
