@@ -3,8 +3,8 @@ package signer
 import (
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
 	"encoding/json"
+	"github.com/matanbroner/goverlay/cmd/id"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -55,15 +55,19 @@ func TestUnpack(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	// test for id mismatch
-	_, err = Unpack("wrong-id", packed)
+	wrongId, err := id.NewPublicKeyId(nil)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	_, err = Unpack(wrongId, packed)
 	assert.NotNil(t, err)
 
 	publicKeyBytes, err := json.Marshal(privateKey.Public())
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	publicKeySum := sha256.Sum256(publicKeyBytes)
-	unpacked, err := Unpack(string(publicKeySum[:]), packed)
+	correctId, err := id.NewPublicKeyId(privateKey.Public().(*rsa.PublicKey))
+	unpacked, err := Unpack(correctId, packed)
 	assert.Nil(t, err)
 	assert.Equal(t, unpacked.Data, message)
 	assert.Equal(t, unpacked.PublicKey, publicKeyBytes)

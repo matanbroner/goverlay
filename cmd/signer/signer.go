@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"github.com/matanbroner/goverlay/cmd/id"
 )
 
 func Pack(data string, privateKey *rsa.PrivateKey) (*SignedData, error) {
@@ -35,7 +36,7 @@ func Pack(data string, privateKey *rsa.PrivateKey) (*SignedData, error) {
 	}, nil
 }
 
-func Unpack(id string, data *SignedData) (*PackableData, error) {
+func Unpack(id *id.PublicKeyId, data *SignedData) (*PackableData, error) {
 	packedData := &PackableData{}
 	publicKey := &rsa.PublicKey{}
 	if err := json.Unmarshal(data.Signed, packedData); err != nil {
@@ -45,9 +46,12 @@ func Unpack(id string, data *SignedData) (*PackableData, error) {
 		return nil, err
 	}
 	hashed := sha256.Sum256(data.Signed)
-	expectId := sha256.Sum256(packedData.PublicKey)
-	if string(expectId[:]) != id {
-		return nil, fmt.Errorf("id does not match on unpack: %s != %s", string(expectId[:]), id)
+	matches, err := id.MatchesPublicKey(publicKey)
+	if err != nil {
+		return nil, err
+	}
+	if !matches {
+		return nil, fmt.Errorf("id does not match on unpack, should be %s", id.ID)
 	} else if rsa.VerifyPKCS1v15(publicKey, crypto.SHA256, hashed[:], data.Signature) != nil {
 		return nil, fmt.Errorf("hash signature does not match on unpack")
 	} else {
