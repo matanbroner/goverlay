@@ -1,8 +1,8 @@
 package wrtc
 
 import (
-	"github.com/matanbroner/goverlay/cmd/id"
-	"github.com/matanbroner/goverlay/cmd/overlay"
+	"github.com/matanbroner/goverlay/lib/id"
+	"github.com/matanbroner/goverlay/lib/overlay"
 	"github.com/pion/webrtc/v3"
 	"time"
 )

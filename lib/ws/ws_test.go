@@ -2,8 +2,8 @@ package ws
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/matanbroner/goverlay/cmd/id"
-	"github.com/matanbroner/goverlay/cmd/overlay"
+	"github.com/matanbroner/goverlay/lib/id"
+	"github.com/matanbroner/goverlay/lib/overlay"
 	"log"
 	"net/http"
 	"os"

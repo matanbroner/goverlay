@@ -1,9 +1,9 @@
 package overlay
 
 import (
-	"github.com/matanbroner/goverlay/cmd/id"
-	"github.com/matanbroner/goverlay/cmd/message"
-	"github.com/matanbroner/goverlay/cmd/wrtc"
+	"github.com/matanbroner/goverlay/lib/id"
+	"github.com/matanbroner/goverlay/lib/message"
+	"github.com/matanbroner/goverlay/lib/wrtc"
 )
 
 type Overlay struct {

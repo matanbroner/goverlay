@@ -7,7 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"github.com/matanbroner/goverlay/cmd/id"
+	"github.com/matanbroner/goverlay/lib/id"
 )
 
 func Pack(data string, privateKey *rsa.PrivateKey) (*SignedData, error) {

@@ -1,6 +1,6 @@
 package dht
 
-import "github.com/matanbroner/goverlay/cmd/overlay"
+import "github.com/matanbroner/goverlay/lib/overlay"
 
 type DHT struct {
 	overlay *overlay.Overlay

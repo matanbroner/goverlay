@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/json"
-	"github.com/matanbroner/goverlay/cmd/id"
+	"github.com/matanbroner/goverlay/lib/id"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

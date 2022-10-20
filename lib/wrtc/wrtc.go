@@ -3,10 +3,10 @@ package wrtc
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/matanbroner/goverlay/cmd/id"
-	"github.com/matanbroner/goverlay/cmd/message"
-	"github.com/matanbroner/goverlay/cmd/overlay"
-	"github.com/matanbroner/goverlay/cmd/signer"
+	"github.com/matanbroner/goverlay/lib/id"
+	"github.com/matanbroner/goverlay/lib/message"
+	"github.com/matanbroner/goverlay/lib/overlay"
+	"github.com/matanbroner/goverlay/lib/signer"
 	"github.com/pion/webrtc/v3"
 	"time"
 )
