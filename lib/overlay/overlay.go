@@ -14,6 +14,7 @@ type Signaler interface {
 	SetConnection(connection *wrtc.WebRTCConnection)
 	IsOverlay() bool
 	AddConnection()
+	Send(m *message.Message)
 }
 
 func New() *Overlay {
@@ -23,5 +24,9 @@ func New() *Overlay {
 }
 
 func (o *Overlay) OnMessage(m *message.Message) error {
+	return nil
+}
+
+func (o *Overlay) ConnectionClosed(conn *wrtc.WebRTCConnection) error {
 	return nil
 }

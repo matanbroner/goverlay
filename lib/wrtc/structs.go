@@ -32,6 +32,8 @@ type WebRTCConnection struct {
 	Signaler       overlay.Signaler
 	PeerConnection *webrtc.PeerConnection
 	Channel        *webrtc.DataChannel
+	PendingIce     []webrtc.ICECandidate
+	Index          int
 
 	// pendingIce: []
 }

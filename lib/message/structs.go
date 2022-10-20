@@ -1,5 +1,10 @@
 package message
 
+import (
+	"github.com/pion/webrtc/v3"
+	"time"
+)
+
 type MessageData struct {
 	To            string   `json:"to"`
 	ToInstance    string   `json:"toInstance"`
@@ -11,10 +16,13 @@ type MessageData struct {
 	Proxies       []string `json:"proxies"`
 	Confirmed     string   `json:"confirmed"`
 	Data          string   `json:"data"`
+	SDP           webrtc.SessionDescription
+	Candidate     webrtc.ICECandidate
 }
 
 type Message struct {
-	EncodedData []byte `json:"data"`
-	Packed      bool   `json:"packed"`
+	EncodedData []byte    `json:"data"`
+	Packed      bool      `json:"packed"`
+	Timestamp   time.Time `json:"timestamp"`
 	Data        MessageData
 }

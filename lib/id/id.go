@@ -8,10 +8,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	"strings"
 	"time"
 )
 
 const bitSize = 4096
+const instanceIDDelimiter = "<>"
+const timeFormat = "2006-01-02T15:04:05.000Z"
 
 type PublicKeyId struct {
 	PrivateKey *rsa.PrivateKey
@@ -69,6 +72,21 @@ func NewInstanceID() *InstanceID {
 		UUID:      uuid.New().String(),
 		CreatedAt: time.Now(),
 	}
-	id.ID = fmt.Sprintf("%s/%s", id.UUID, id.CreatedAt)
+	id.ID = fmt.Sprintf("%s%s%s", id.UUID, instanceIDDelimiter, id.CreatedAt)
 	return id
+}
+
+func InstanceIDFromString(id string) *InstanceID {
+	split := strings.Split(id, instanceIDDelimiter)
+	if len(split) != 2 {
+		return nil
+	}
+	parsed, err := time.Parse(timeFormat, split[1])
+	if err != nil {
+		return nil
+	}
+	return &InstanceID{
+		UUID:      split[0],
+		CreatedAt: parsed,
+	}
 }
