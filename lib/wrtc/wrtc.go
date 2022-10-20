@@ -15,14 +15,13 @@ import (
 const defaultChannel = "chat"
 
 type WebRTCWrapper struct {
-	ID              *id.PublicKeyId
-	Overlay         *overlay.Overlay
-	Connections     []*WebRTCConnection
-	ConnectionsMap  map[string]*WebRTCConnection
-	InstancesMap    map[string]*WebRTCConnection
-	Listeners       []func()
-	BinaryListeners []func(string, []byte)
-	DeadTimestamps  []time.Time
+	ID             *id.PublicKeyId
+	Overlay        *overlay.Overlay
+	Connections    []*WebRTCConnection
+	ConnectionsMap map[string]*WebRTCConnection
+	InstancesMap   map[string]*WebRTCConnection
+	Listeners      []func()
+	DeadTimestamps []time.Time
 }
 
 func NewWebRTCWrapper(id *id.PublicKeyId, o *overlay.Overlay) *WebRTCWrapper {
@@ -319,42 +318,37 @@ func (w *WebRTCWrapper) SetupDataChannel(conn *WebRTCConnection) error {
 		if err := json.Unmarshal(msg.EncodedData, &msg.Data); err != nil {
 			fmt.Printf("wrtc message parse error: %s\n", err.Error())
 		}
-		if m.IsString {
-			switch msg.Data.Action {
-			case message.MarkUsedByPeer:
-				{
-					conn.IsUsedByPeer = true
-					break
-				}
-			case message.MarkUnusedByPeer:
-				{
-					conn.IsUsedByPeer = false
-					if !conn.IsUsed {
-						if err := w.Disconnect(conn); err != nil {
-							fmt.Printf("wrtc disconnect channel error: %s\n", err.Error())
-						}
-					}
-				}
-			case message.Disconnect:
-				{
+		switch msg.Data.Action {
+		case message.MarkUsedByPeer:
+			{
+				conn.IsUsedByPeer = true
+				break
+			}
+		case message.MarkUnusedByPeer:
+			{
+				conn.IsUsedByPeer = false
+				if !conn.IsUsed {
 					if err := w.Disconnect(conn); err != nil {
 						fmt.Printf("wrtc disconnect channel error: %s\n", err.Error())
 					}
 				}
-			case message.OverlayMessage:
-				{
-					if err := w.Overlay.OnMessage(msg); err != nil {
-						fmt.Printf("wrtc overlay message handler error: %s", err.Error())
-					}
+			}
+		case message.Disconnect:
+			{
+				if err := w.Disconnect(conn); err != nil {
+					fmt.Printf("wrtc disconnect channel error: %s\n", err.Error())
 				}
-			default:
-				fmt.Printf("wrtc unrecognized message action: %s", msg.Data.Action)
 			}
-		} else {
-			for _, listener := range w.BinaryListeners {
-				listener(conn.PeerID, m.Data)
+		case message.OverlayMessage:
+			{
+				if err := w.Overlay.OnMessage(msg); err != nil {
+					fmt.Printf("wrtc overlay message handler error: %s", err.Error())
+				}
 			}
+		default:
+			fmt.Printf("wrtc unrecognized message action: %s", msg.Data.Action)
 		}
+
 	})
 	conn.Channel.OnClose(func() {
 		if err := w.RemoveConnection(conn); err != nil {
