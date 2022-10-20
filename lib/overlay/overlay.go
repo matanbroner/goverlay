@@ -8,12 +8,17 @@ import (
 	"time"
 )
 
+const MaxFloodSize = 5
+
 type Overlay struct {
 	ID              *id.PublicKeyId
 	Listeners       []Listener
 	Status          OverlayStatusMap
 	PendingMessages []*message.Message
 	WebRTCWrapper   *wrtc.WebRTCWrapper
+	Fingers         []string
+	Flood           []string
+	MaxFloodSize    int
 }
 
 type Signaler interface {
@@ -34,8 +39,9 @@ func New(i *id.PublicKeyId) *Overlay {
 			IsInitialized: false,
 			IsSubordinate: false,
 		},
-		ID:        i,
-		Listeners: []Listener{},
+		ID:           i,
+		Listeners:    []Listener{},
+		MaxFloodSize: MaxFloodSize,
 	}
 
 	return o
@@ -63,10 +69,18 @@ func (o *Overlay) InFloodRange(key string) bool {
 	return false
 }
 
+func (o *Overlay) InFlood(key string) bool {
+	return false
+}
+
 func (o *Overlay) SendToClosest(m *message.Message) {
 	// make sure to set id here, maybe by calling SendMessage
 }
 
 func (o *Overlay) Proxy(m *message.Message) {
 
+}
+
+func (o *Overlay) GoldenIDs() []string {
+	return []string{}
 }

@@ -14,3 +14,6 @@ const DHTPut = "dht-put"
 const DHTPutAck = "dht-put-ack"
 const DHTGet = "dht-get"
 const DHTGot = "dht-got"
+
+// Chord Actions
+const FindFinger = "find-finger"

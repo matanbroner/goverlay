@@ -2,8 +2,10 @@ package id
 
 import "math/big"
 
-var MaxStr = "10000000000000000000000000000000000000000000000000000000000000000"
-var HalfMaxStr = "8000000000000000000000000000000000000000000000000000000000000000"
+const PendingID = "pending-id"
+const MaxStr = "10000000000000000000000000000000000000000000000000000000000000000"
+const HalfMaxStr = "8000000000000000000000000000000000000000000000000000000000000000"
+
 var Max, _ = new(big.Int).SetString(MaxStr, 16)
 var HalfMax, _ = new(big.Int).SetString(HalfMaxStr, 16)
 var Zero = new(big.Int).SetInt64(0)
@@ -97,7 +99,7 @@ func IdealFinger(i string, level int) string {
 			ideal.Sub(ideal, Max)
 		}
 		// divide offset by 2
-		offset.Lsh(offset, 2)
+		offset.Rsh(offset, 1)
 	}
 	return BigIntToID(ideal)
 }
