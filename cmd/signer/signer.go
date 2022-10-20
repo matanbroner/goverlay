@@ -36,7 +36,7 @@ func Pack(data string, privateKey *rsa.PrivateKey) (*SignedData, error) {
 	}, nil
 }
 
-func Unpack(id *id.PublicKeyId, data *SignedData) (*PackableData, error) {
+func Unpack(data *SignedData, id *id.PublicKeyId) (*PackableData, error) {
 	packedData := &PackableData{}
 	publicKey := &rsa.PublicKey{}
 	if err := json.Unmarshal(data.Signed, packedData); err != nil {

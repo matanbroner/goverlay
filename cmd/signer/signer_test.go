@@ -59,7 +59,7 @@ func TestUnpack(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	_, err = Unpack(wrongId, packed)
+	_, err = Unpack(packed, wrongId)
 	assert.NotNil(t, err)
 
 	publicKeyBytes, err := json.Marshal(privateKey.Public())
@@ -67,7 +67,7 @@ func TestUnpack(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	correctId, err := id.NewPublicKeyId(privateKey, "")
-	unpacked, err := Unpack(correctId, packed)
+	unpacked, err := Unpack(packed, correctId)
 	assert.Nil(t, err)
 	assert.Equal(t, unpacked.Data, message)
 	assert.Equal(t, unpacked.PublicKey, publicKeyBytes)

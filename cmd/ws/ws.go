@@ -2,10 +2,10 @@ package ws
 
 import (
 	"encoding/json"
-	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/gorilla/websocket"
 	"github.com/matanbroner/goverlay/cmd/id"
+	"github.com/matanbroner/goverlay/cmd/message"
 	"github.com/matanbroner/goverlay/cmd/overlay"
 	"github.com/matanbroner/goverlay/cmd/signer"
 	"log"
@@ -23,7 +23,7 @@ type WebSocketWrapper struct {
 	SuccessfulFirstConnectionSet *mapset.Set[string]
 	Socket                       *websocket.Conn
 	Graceful                     bool
-	MessageOutChannel            chan WebSocketMessage
+	MessageOutChannel            chan message.Message
 	DoneChannel                  chan struct{}
 	InterruptChannel             chan os.Signal
 
@@ -64,19 +64,19 @@ func (ws *WebSocketWrapper) Connect(config *WebSocketConfig) error {
 	ws.Socket = sock
 
 	ws.DoneChannel = make(chan struct{})
-	ws.MessageOutChannel = make(chan WebSocketMessage)
+	ws.MessageOutChannel = make(chan message.Message)
 	ws.InterruptChannel = make(chan os.Signal, 1)
 	signal.Notify(ws.InterruptChannel, os.Interrupt)
 
 	go func() {
 		defer close(ws.DoneChannel)
 		for {
-			_, message, err := ws.Socket.ReadMessage()
+			_, m, err := ws.Socket.ReadMessage()
 			if err != nil {
 				log.Println("ws error:", err.Error())
 				return
 			}
-			if err := ws.onMessage(message); err != nil {
+			if err := ws.onMessage(m); err != nil {
 				log.Println("ws error:", err.Error())
 				return
 			}
@@ -85,39 +85,28 @@ func (ws *WebSocketWrapper) Connect(config *WebSocketConfig) error {
 
 	go ws.handleChannels()
 
-	action := "connect"
+	action := message.Connect
 	if config.Reconnect {
-		action = "reconnect"
+		action = message.Reconnect
 	}
 
-	payload := json.RawMessage(fmt.Sprintf(`
-		"action": "%s",
-		"from": "%s",
-		"fromInstance": "%s"
-	`, action, ws.ID.ID, ws.ID.InstanceID))
-	payloadBytes, err := payload.MarshalJSON()
-	if err != nil {
-		return err
-	}
-	signed, err := signer.Pack(string(payloadBytes), ws.ID.PrivateKey)
-	if err != nil {
-		return err
-	}
-	signed.VerifyID = ws.ID.ID
-	signedBytes, err := json.Marshal(signed)
-	if err != nil {
-		return err
-	}
-	message := WebSocketMessage{
-		Type:    "INIT",
-		Payload: signedBytes,
+	m := message.Message{
+		Data: message.MessageData{
+			Action:       action,
+			From:         ws.ID.ID,
+			FromInstance: ws.ID.InstanceID.ID,
+		},
+		Packed: true,
 	}
 
-	ws.MessageOutChannel <- message
+	ws.MessageOutChannel <- m
 
 	//if (this.blockCallback) {
 	//	this.sendGetBlock();
 	//}
+
+	// TODO: handle graceful reconnection, ws.onclose -> reconnect
+	// see https://github.com/recws-org/recws
 
 	return nil
 }
@@ -132,16 +121,89 @@ func (ws *WebSocketWrapper) Disconnect() error {
 	return nil
 }
 
-func (ws *WebSocketWrapper) onMessage(message []byte) error {
-	parsed := &WebSocketMessage{}
-	if err := json.Unmarshal(message, parsed); err != nil {
+func (ws *WebSocketWrapper) Confirm(id string) error {
+	ws.MessageOutChannel <- message.Message{
+		Data: message.MessageData{
+			Action:       message.Confirm,
+			Confirmed:    id,
+			From:         ws.ID.ID,
+			FromInstance: ws.ID.InstanceID.ID,
+		},
+		Packed: true,
+	}
+	return nil
+}
+
+func (ws *WebSocketWrapper) Send(to string, toInstance string, data string, packed bool) error {
+	ws.MessageOutChannel <- message.Message{
+		Data: message.MessageData{
+			To:           to,
+			ToInstance:   toInstance,
+			From:         ws.ID.ID,
+			FromInstance: ws.ID.InstanceID.ID,
+			Data:         data,
+		},
+		Packed: packed,
+	}
+	return nil
+}
+
+func (ws *WebSocketWrapper) SendGetBlock() error {
+	ws.MessageOutChannel <- message.Message{
+		Data: message.MessageData{
+			Action:       message.GetBlock,
+			From:         ws.ID.ID,
+			FromInstance: ws.ID.InstanceID.ID,
+		},
+		Packed: true,
+	}
+	return nil
+}
+
+func (ws *WebSocketWrapper) encodeRawMessage(message string, pack bool) ([]byte, error) {
+	payload := json.RawMessage(message)
+	payloadBytes, err := payload.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	if pack {
+		signed, err := signer.Pack(string(payloadBytes), ws.ID.PrivateKey)
+		if err != nil {
+			return nil, err
+		}
+		signed.VerifyID = ws.ID.ID
+		signedBytes, err := json.Marshal(signed)
+		if err != nil {
+			return nil, err
+		}
+		return signedBytes, nil
+	} else {
+		return payloadBytes, nil
+	}
+}
+
+func (ws *WebSocketWrapper) onMessage(m []byte) error {
+	parsed := &message.Message{}
+	if err := json.Unmarshal(m, parsed); err != nil {
 		return err
 	}
-	switch parsed.Type {
-	case "PING":
-		{
-			ws.MessageOutChannel <- WebSocketMessage{Type: "PONG"}
+	if parsed.Packed {
+		packed := &signer.SignedData{}
+		if err := json.Unmarshal(parsed.EncodedData, packed); err != nil {
+			return err
 		}
+		unpacked, err := signer.Unpack(packed, ws.ID)
+		if err != nil {
+			return err
+		}
+		parsed.EncodedData = []byte(unpacked.Data)
+	}
+	if err := json.Unmarshal(parsed.EncodedData, &parsed.Data); err != nil {
+		return err
+	}
+	switch parsed.Data.Action {
+	case "p":
+
 	}
 
 	return nil
@@ -155,6 +217,22 @@ func (ws *WebSocketWrapper) handleChannels() {
 		case <-ws.DoneChannel:
 			return
 		case m := <-ws.MessageOutChannel:
+			bytes, err := json.Marshal(m.Data)
+			if err != nil {
+				log.Println("ws encode error:", err.Error())
+			}
+			if m.Packed {
+				packed, err := signer.Pack(string(bytes), ws.ID.PrivateKey)
+				if err != nil {
+					log.Println("ws pack error:", err.Error())
+				}
+				packedBytes, err := json.Marshal(packed)
+				if err != nil {
+					log.Println("ws encode error:", err.Error())
+				}
+				bytes = packedBytes
+			}
+			m.EncodedData = bytes
 			if err := ws.Socket.WriteJSON(m); err != nil {
 				log.Println("ws write error:", err.Error())
 				return
