@@ -9,8 +9,11 @@ import (
 )
 
 type Overlay struct {
-	ID        *id.PublicKeyId
-	Listeners []Listener
+	ID              *id.PublicKeyId
+	Listeners       []Listener
+	Status          OverlayStatusMap
+	PendingMessages []*message.Message
+	WebRTCWrapper   *wrtc.WebRTCWrapper
 }
 
 type Signaler interface {
@@ -24,8 +27,16 @@ type Listener interface {
 	OnMessage(m *message.Message)
 }
 
-func New() *Overlay {
-	o := &Overlay{}
+func New(i *id.PublicKeyId) *Overlay {
+	o := &Overlay{
+		Status: OverlayStatusMap{
+			IsBadNet:      false,
+			IsInitialized: false,
+			IsSubordinate: false,
+		},
+		ID:        i,
+		Listeners: []Listener{},
+	}
 
 	return o
 }
@@ -54,4 +65,8 @@ func (o *Overlay) InFloodRange(key string) bool {
 
 func (o *Overlay) SendToClosest(m *message.Message) {
 	// make sure to set id here, maybe by calling SendMessage
+}
+
+func (o *Overlay) Proxy(m *message.Message) {
+
 }

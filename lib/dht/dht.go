@@ -23,7 +23,7 @@ type OverlayListener struct {
 
 // DHT Methods
 
-func New(overlay *overlay.Overlay) *DHT {
+func NewDHT(overlay *overlay.Overlay) *DHT {
 	d := &DHT{
 		Overlay:        overlay,
 		Data:           make(map[string]map[string]string),
@@ -79,9 +79,9 @@ func (d *DHT) Put(key string, value string, id string, cb func(map[string]string
 }
 
 func (d *DHT) HashKey(key string) string {
-	hasher := sha256.New()
-	hasher.Write([]byte(key))
-	return base64.URLEncoding.EncodeToString(hasher.Sum(nil))
+	h := sha256.New()
+	h.Write([]byte(key))
+	return base64.URLEncoding.EncodeToString(h.Sum(nil))
 }
 
 // OverlayMessageListener Methods

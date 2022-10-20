@@ -166,7 +166,7 @@ func (w *WebRTCWrapper) HandleSignal(peer string, instanceID *id.InstanceID, m *
 	if m.Data.SDP == (webrtc.SessionDescription{}) {
 		sdp = &m.Data.SDP
 	}
-	if conn != nil && sdp != nil && sdp.Type == webrtc.SDPTypeOffer && w.ID.ID == peer {
+	if conn != nil && sdp != nil && sdp.Type == webrtc.SDPTypeOffer && id.ShouldYieldToID(w.ID.ID, peer) {
 		fmt.Println("wrtc collision")
 		if err := w.Disconnect(conn); err != nil {
 			return err
@@ -462,4 +462,9 @@ func (w *WebRTCWrapper) UpdateListeners() error {
 		listen()
 	}
 	return nil
+}
+
+func (conn *WebRTCConnection) IsPending() bool {
+	iceConnState := conn.PeerConnection.ICEConnectionState()
+	return iceConnState == webrtc.ICEConnectionStateChecking || iceConnState == webrtc.ICEConnectionStateNew
 }
